@@ -10,13 +10,42 @@ After selecting the path between models through relations, after clicking CREATE
 It is also possible to select a model and click on its name and it will take you to Visual Studio Code to the file and line of the given model.
 
 
-To run:
+## Installation
 
-Installed apps: "django_model_viewer",
 
-Middleware: "django_model_viewer.middleware.AppendApplication"
 
-Urls: "path(`models-view/`, include(`django_model_viewer.urls`))"',
+```bash
+  pip install django-model-viewer
+```
 
-Get into /models-view and use!
+Open your project settings and add:
+
+```py
+INSTALLED_APPS = [
+    ***
+    'django_model_viewer',
+    ***
+]
+
+MIDDLEWARE = [
+    ***
+    'django_model_viewer.middleware.AppendApplication',
+    ***
+]
+```
+
+Add path to main urls file
+
+```py
+urlpatterns = [
+    path('models-view/', include('django_model_viewer.urls')),
+    ***
+]
+```
+
+### Run server and use at '/models-view' url
     
+## Authors
+
+- self
+
