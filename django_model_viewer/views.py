@@ -52,7 +52,7 @@ class ShowModelsAll(TemplateView):
         <div class="grid grid-cols-8 gap-2 w-full max-w-[23rem]">
           <input id="path_input" type="text" class="bg-violet-300 col-span-6 bg-gray-50 border border-gray-300 text-gray-500 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" readonly>
           <button id="copy-btn" onclick="CopyRelationsPath()" class="col-span-2 text-white bg-violet-600 hover:bg-violet-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full py-2.5 text-center items-center inline-flex justify-center">
-            <span id="default-message">Create path</span>
+            <span id="default-message">Create</span>
             <span id="success-message" class="hidden inline-flex items-center">
               <svg class="w-3 h-3 text-white me-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5.917 5.724 10.5 15 1.5"/>
@@ -63,11 +63,28 @@ class ShowModelsAll(TemplateView):
         </div>
       </div>
       <button data-modal-target="default-modal" data-modal-toggle="default-modal" class="absolute top-5 right-5 text-white bg-violet-600 hover:bg-violet-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" type="button">About</button>
+      
+      <!-- Replace the select with a searchable dropdown using Flowbite -->
+      <div class="mb-5 relative">
         <label for="model-select" class="block text-sm font-medium text-gray-700">Select Model:</label>
-        <select id="model-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
-          <option selected disabled>Select a model</option>
-        </select>
-      </div>   
+        <div class="mt-1 relative">
+          <button id="dropdownSearchButton" data-dropdown-toggle="dropdownSearch" class="w-full text-left py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
+            Select a model
+          </button>
+          <!-- Dropdown menu -->
+          <div id="dropdownSearch" class="hidden z-10 w-full bg-white rounded-md shadow-lg">
+            <!-- Search input -->
+            <div class="px-3 py-2">
+              <input type="text" id="dropdownSearchInput" class="block w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Search...">
+            </div>
+            <!-- Dropdown options -->
+            <ul id="dropdownSearchOptions" class="py-2 text-sm text-gray-700" aria-labelledby="dropdownSearchButton">
+              <!-- Options will be dynamically inserted here -->
+            </ul>
+          </div>
+        </div>
+      </div>  
+
       <!-- Main modal -->
       <div id="default-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
         <div class="relative p-4 w-full max-w-2xl max-h-full">
@@ -76,13 +93,13 @@ class ShowModelsAll(TemplateView):
                 <!-- Modal header -->
                 <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
                     <h3 class="text-xl text-gray-900 text-center">
-                        About <span class="font-semibold underline">Django-Model-Viewer</span>
+                        About <span class="font-semibold underline">Models-Viewer</span>
                     </h3>
                 </div>
                 <!-- Modal body -->
                 <div class="p-4 md:p-5 space-y-4">
                     <p class="text-base leading-relaxed text-gray-700">
-                      An application that facilitates the identification and operation of models. It searches for all available models in the project and allows you to select and view details about them by holding the mouse on the parameter of interest. After selecting the path between models through relations, after clicking CREATE we will get a path that allows you to get to the last model. It is also possible to select a model and click on its name and it will take you to Visual Studio Code to the file and line of the given model
+                      Aplikacja ułatwiająca identyfikacje i działanie na modelach. Wyszukuje wszystkie dostępne modele w projekcie oraz pozwala wybrać i podglądnąc szczegółów o nich poprzez przytrzymanie myszki na interesujący nas parametr. Po wybraniu ścieżki między modelami poprzez relacje po kliknięciu CREATE dostaniemy ścieżke umożliwiającą dostanie się do ostatniego modelu. Również jest możliwość wybrania modelu oraz kliknięcie na nazwe jego i przeniesie ciebie na Visual Studio Code do pliku oraz linijki danego modelu
                     </p>
                     <p class="text-base leading-relaxed text-gray-700">
                       <strong class="text-grey-800">Relations:</strong><br>
@@ -117,10 +134,50 @@ class ShowModelsAll(TemplateView):
 
       let data = JSON.parse("{{ models | escapejs }}");
 
+      // Populate dropdown options dynamically
       $.each(data, function (index, object) {
-        $("#model-select").append(
-        `<option value='${index}' name='${object.name}'>${object.name}</option>`
+        $("#dropdownSearchOptions").append(
+          `<li><button type="button" class="w-full text-left px-4 py-2 hover:bg-gray-100" data-value="${index}" data-name="${object.name}">${object.name}</button></li>`
         );
+      });
+
+      $("#dropdownSearchOptions button").on("click", function () {
+        const selectedIndex = $(this).data('value');
+        const selectedName = $(this).data('name');
+        $("#dropdownSearchButton").text(selectedName); // Set selected text to the dropdown button
+        $("#dropdownSearch").addClass("hidden"); // Close dropdown
+
+        const selectedModel = data[selectedIndex];
+        $("#model-table-body").empty();  
+        displayedModels.clear();         
+
+        if (selectedModel) {
+          $.ajax({
+            url: '{% url "ajax-call" %}',
+            data: {
+              model: selectedName,
+            },
+            success: function (response) {
+              const modelData = response.data;
+              if (modelData) {
+                appendModelRow(modelData);
+                displayedModels.add(modelData.name);
+              }
+            },
+            error: function (xhr, status, error) {
+              console.error(`Error fetching data for model ${selectedName}: ${error}`);
+            },
+          });
+        }
+      });
+
+      // Search functionality
+      $("#dropdownSearchInput").on("input", function () {
+        const searchTerm = $(this).val().toLowerCase();
+        $("#dropdownSearchOptions li").each(function () {
+          const text = $(this).text().toLowerCase();
+          $(this).toggle(text.includes(searchTerm));
+        });
       });
 
       $("#model-select").on("change", function () {
@@ -132,7 +189,7 @@ class ShowModelsAll(TemplateView):
 
         if (selectedModel) {
           $.ajax({
-            url: '{% url "aqSFrOMAEQgBlduCuYfr" %}',
+            url: '{% url "ajax-call" %}',
             data: {
               model: selectedName,
             },
@@ -179,7 +236,7 @@ class ShowModelsAll(TemplateView):
             <td class="px-6 py-4">${fieldsContent || "N/A"}</td>
             <td class="px-6 py-4">${relationsContent || "N/A"}</td>
           </tr>
-`);
+        `);
       }
 
       window.fetchRelatedModel = function (modelName, btnElement) {
@@ -205,8 +262,8 @@ class ShowModelsAll(TemplateView):
           success: function (response) {
             const modelData = response.data;
             if (modelData) {
-            appendModelRow(modelData);
-            displayedModels.add(modelData.name);
+              appendModelRow(modelData);
+              displayedModels.add(modelData.name);
             }
           },
           error: function (xhr, status, error) {
@@ -246,11 +303,10 @@ class ShowModelsAll(TemplateView):
           $("#success-message").addClass("hidden");
         }, 2000);
       }
-      });
-    </script>
+    });
+  </script>
   </body>
 </html>
-
         """
 
         template = Template(html_content)
