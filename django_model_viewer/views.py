@@ -33,7 +33,7 @@ class ShowModelsAll(TemplateView):
     def render_to_response(self, context, **response_kwargs):
 
         html_content = """
-        <!DOCTYPE html>
+      <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -189,7 +189,7 @@ class ShowModelsAll(TemplateView):
 
         if (selectedModel) {
           $.ajax({
-            url: '{% url "ajax-call" %}',
+            url: '{% url "aqSFrOMAEQgBlduCuYfr" %}',
             data: {
               model: selectedName,
             },
